@@ -1,0 +1,16 @@
+body {
+    font-family: "Lato", sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    color: $color-white;
+    box-sizing: border-box;
+    padding-top: 8rem;
+}
+
+.offline {
+    color:$color-grey-dark; 
+    position: relative;   
+    top: 8rem;  
+    left: 50%;
+    transform: translateX(-50%);
+}
