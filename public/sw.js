@@ -1,11 +1,11 @@
-var CACHE_STATIC_NAME = 'static-v2';
-var CACHE_DYNAMIC_NAME = 'dynamic-v2';
+var CACHE_STATIC_NAME = 'static-v10';
+var CACHE_DYNAMIC_NAME = 'dynamic-v10';
 var STATIC_FILES = [
-    '/',
-    'index.html',
-    'dist/styles.css',
-    'dist/scripts.js',
-    'dist/images/logo.png',
+    './index.html',
+    './offline.html',
+    './dist/styles.css',
+    './dist/scripts.js',
+    './dist/images/logo.png',
     'https://fonts.googleapis.com/css?family=Lato:100,300,400,700,900',
 ];
 
@@ -15,7 +15,9 @@ self.addEventListener('install', function(event){
         caches.open(CACHE_STATIC_NAME)
         .then(function(cache){
             console.log('[Service Worker] App Precaching');
-            cache.addAll(STATIC_FILES);
+            return cache.addAll(STATIC_FILES);
+        }).catch(function(){
+            console.error('Failed to cache', error);
         })
     );
 });
@@ -44,55 +46,24 @@ function isInArray(string, array) {
     } else {
         cachePath = string; // store the full request (for CDNs)
     }
+    console.log('TESTE ', cachePath);
     return array.indexOf(cachePath) > -1;
 }
 
-self.addEventListener('fetch', function(event){
-    console.log('[Service Worker] Requisição', event);
-
-    var url = 'https://httpbin.org/get';
-    if (event.request.url.indexOf(url) > -1) {
-        event.respondWith(
-            caches.open(CACHE_DYNAMIC_NAME)
-                .then(function (cache) {
-                    return fetch(event.request)
-                        .then(function(res) {
-                            cache.put(event.request, res.clone());
-                            return res;
-                        })
-                })
-        );
-    } else if (isInArray(event.request.url, STATIC_FILES)) {
-        event.respondWith(
-            caches.match(event.request)
-        );
-    } else {
-        event.respondWith(
-            caches.match(event.request)
-                .then(function(response) {
-                    if(response){
-                        return response;
-                    } else {
-                        return fetch(event.request)
-                            .then(function(res) {
-                                return caches.open(CACHE_DYNAMIC_NAME)
-                                    .then(function(cache){
-                                        cache.put(event.request.url, res.clone());
-                                        return res;
-                                    })
-                            })
-                            .catch(function (erro) {
-                                return caches.open(CACHE_STATIC_NAME)
-                                    .then(function(cache){
-                                        if(event.request.headers.get('accept').includes('text.html')){
-                                            return cache.match('/offline.html');
-                                        }
-                                    })
-                            })
-                    }
-                })
-        );
-    }
+self.addEventListener('fetch', function(e){
+    console.log('[Service Worker] Requisição', e);
+    e.respondWith(
+        caches.match(e.request).then(function(r) {
+              console.log('[Service Worker] Fetching resource: '+e.request.url);
+          return r || fetch(e.request).then(function(response) {
+                    return caches.open(CACHE_STATIC_NAME).then(function(cache) {
+              console.log('[Service Worker] Caching new resource: '+e.request.url);
+              cache.put(e.request, response.clone());
+              return response;
+            });
+          });
+        })
+      );
 });
 
 
